@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -11,7 +12,7 @@ using UnityEngine;
 namespace TauntBinds;
 
 [BepInPlugin("com.koki.tauntbinds", "Taunt Binds", "1.0.0")]
-public class Plugin : BaseUnityPlugin
+public class TauntBindPlugin : BaseUnityPlugin
 {
     internal static ManualLogSource Log;
     internal static Harmony harmony;
@@ -35,11 +36,21 @@ public class Plugin : BaseUnityPlugin
     [HarmonyPatch(typeof(FirstPersonController), "HandleTaunt")]
     internal static class FirstPersonControllerPatch
     {
-        public static bool Prefix(FirstPersonController __instance)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            __instance.tauntTimer -= Time.deltaTime;
-            if (__instance.tauntTimer > 0f) return false;
+            var handleTaunt = AccessTools.Method(typeof(FirstPersonControllerPatch), nameof(HandleTaunt));
 
+            return new CodeMatcher(instructions)
+            .MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S, 49))
+            .Insert(
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Call, handleTaunt),
+                new CodeInstruction(OpCodes.Ret))
+            .InstructionEnumeration();
+        }
+
+        public static void HandleTaunt(FirstPersonController __instance)
+        {
             for (int i = 0; i < 10; i++)
             {
                 if (Input.GetKeyDown(_tauntKeys[i].Value))
@@ -50,7 +61,6 @@ public class Plugin : BaseUnityPlugin
                     break;
                 }
             }
-            return false;
         }
     }
 
