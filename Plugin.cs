@@ -40,47 +40,47 @@ public class TauntBindPlugin : BaseUnityPlugin
             // Other mod has a prefix that just totally rewrites the function so it can't be compatible
             Harmony.UnpatchID("dimolade.harmony.InfTaunt");
         }
-        
+
         _harmony = new Harmony("TauntBinds");
         _harmony.PatchAll();
     }
 
     private void OnDestroy()
     {
-        Debug.LogError("destroying");
         _harmony.UnpatchSelf();
     }
-}
 
-[HarmonyPatch(typeof(FirstPersonController), "HandleTaunt")]
-public static class FirstPersonControllerPatch
-{
-    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    [HarmonyPatch(typeof(FirstPersonController), "HandleTaunt")]
+    public static class FirstPersonControllerPatch
     {
-        Debug.LogError("SLDFKJ");
-        var handleTaunt = AccessTools.Method(typeof(FirstPersonControllerPatch), nameof(HandleTaunt));
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            // var handleTaunt = AccessTools.Method(typeof(FirstPersonControllerPatch), nameof(HandleTaunt));
 
-        return new CodeMatcher(instructions)
-        .MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S, 49))
-        .Insert(
-            new CodeInstruction(OpCodes.Ldarg_0),
-            new CodeInstruction(OpCodes.Call, handleTaunt),
-            new CodeInstruction(OpCodes.Ret))
-        .InstructionEnumeration();
-    }
+            var matcher = new CodeMatcher(instructions);
+            for (int i = 1; i < 10; i++)
+            {
+                matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
+                matcher.Instruction.operand = (int)_tauntKeys[i].Value;
+            }
+            matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
+            matcher.Instruction.operand = (int)_tauntKeys[0].Value;
+            return matcher.InstructionEnumeration();
+        }
 
-    public static void HandleTaunt(FirstPersonController __instance)
-    {
-        TauntBindPlugin.Log.LogError("SLFKDJ");
-        // for (int i = 0; i < 10; i++) 
+        // public static void HandleTaunt(FirstPersonController __instance)
         // {
-        //     if (Input.GetKeyDown(_tauntKeys[i].Value))
-        //     {
-        //         __instance.AboubiPlayServer(i);
-        //         Settings.Instance.IncreaseTauntsAmount();
-        //         __instance.tauntTimer = _infTaunt ? 0 : _tauntCooldowns[i];
-        //         break;
-        //     }
+        //     TauntBindPlugin.Log.LogError("SLFKDJ");
+        //     // for (int i = 0; i < 10; i++) 
+        //     // {
+        //     //     if (Input.GetKeyDown(_tauntKeys[i].Value))
+        //     //     {
+        //     //         __instance.AboubiPlayServer(i);
+        //     //         Settings.Instance.IncreaseTauntsAmount();
+        //     //         __instance.tauntTimer = _infTaunt ? 0 : _tauntCooldowns[i];
+        //     //         break;
+        //     //     }
+        //     // }
         // }
     }
 }
