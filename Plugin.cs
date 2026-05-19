@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace TauntBinds;
 
-[BepInPlugin("com.koki.tauntbinds", "Taunt Binds", "1.0.0")]
+[BepInPlugin("TauntBinds", "Taunt Binds", "1.0.0")]
 [BepInDependency("dimolade.dimolade.InfTaunt", BepInDependency.DependencyFlags.SoftDependency)]
 public class TauntBindPlugin : BaseUnityPlugin
 {
