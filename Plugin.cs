@@ -6,6 +6,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using ComputerysModdingUtilities;
 using HarmonyLib;
+using HarmonyLib.Tools;
 using UnityEngine;
 
 [assembly: StraftatMod(isVanillaCompatible: true)]
@@ -41,6 +42,9 @@ public class TauntBindPlugin : BaseUnityPlugin
             Harmony.UnpatchID("dimolade.harmony.InfTaunt");
         }
 
+        // debug
+        HarmonyFileLog.Enabled = true;
+
         _harmony = new Harmony("TauntBinds");
         _harmony.PatchAll();
     }
@@ -61,26 +65,11 @@ public class TauntBindPlugin : BaseUnityPlugin
             for (int i = 1; i < 10; i++)
             {
                 matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
-                matcher.Instruction.operand = (int)_tauntKeys[i].Value;
+                matcher.SetOperandAndAdvance((int)_tauntKeys[i].Value);
             }
             matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
-            matcher.Instruction.operand = (int)_tauntKeys[0].Value;
+            matcher.SetOperandAndAdvance((int)_tauntKeys[0].Value);
             return matcher.InstructionEnumeration();
         }
-
-        // public static void HandleTaunt(FirstPersonController __instance)
-        // {
-        //     TauntBindPlugin.Log.LogError("SLFKDJ");
-        //     // for (int i = 0; i < 10; i++) 
-        //     // {
-        //     //     if (Input.GetKeyDown(_tauntKeys[i].Value))
-        //     //     {
-        //     //         __instance.AboubiPlayServer(i);
-        //     //         Settings.Instance.IncreaseTauntsAmount();
-        //     //         __instance.tauntTimer = _infTaunt ? 0 : _tauntCooldowns[i];
-        //     //         break;
-        //     //     }
-        //     // }
-        // }
     }
 }
