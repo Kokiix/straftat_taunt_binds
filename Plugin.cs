@@ -17,23 +17,23 @@ namespace TauntBinds;
 [BepInDependency("dimolade.dimolade.InfTaunt", BepInDependency.DependencyFlags.SoftDependency)]
 public class TauntBindPlugin : BaseUnityPlugin
 {
-    internal static ManualLogSource Log;
     private static Harmony _harmony;
 
     private static ConfigEntry<KeyCode>[] _tauntKeys = new ConfigEntry<KeyCode>[10];
     private static readonly KeyCode[] _defaultKeys = [KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9];
     private static bool _infTaunt = false;
+    private static bool _limitTaunts = false;
 
     private void Awake()
     {
-        Log = Logger;
         for (int i = 0; i < 10; i++)
         {
-            _tauntKeys[i] = Config.Bind("General", "Key for taunt #" + i, _defaultKeys[i]);
+            _tauntKeys[i] = Config.Bind("Bindings", "Key for taunt #" + i, _defaultKeys[i]);
         }
 
         // Inftaunt
-        _infTaunt = Config.Bind("General", "Infinite Taunt", false, "Remove cooldown on taunting. Having the InfTaunt mod enabled will automatically set this to true.").Value;
+        _infTaunt = Config.Bind("Infinite Taunt", "Remove cooldown on taunts", false, "Having the InfTaunt mod enabled will automatically set this to true.").Value;
+        _infTaunt = Config.Bind("Infinite Taunt", "Limit Received Taunts", true, "Vanilla limits received taunts to ~5 per second. Removing this allows you to hear inftaunts of other players.").Value;
         if (Chainloader.PluginInfos.ContainsKey("dimolade.dimolade.InfTaunt"))
         {
             _infTaunt = true;
@@ -42,7 +42,10 @@ public class TauntBindPlugin : BaseUnityPlugin
         }
 
         _harmony = new Harmony("TauntBinds");
-        _harmony.PatchAll();
+        _harmony.PatchAll(typeof(TauntBindPatch));
+
+        if (!_limitTaunts)
+            _harmony.PatchAll(typeof(RemoveTauntLimiter));
     }
 
     private void OnDestroy()
@@ -89,7 +92,7 @@ public class TauntBindPlugin : BaseUnityPlugin
 }
 
 [HarmonyPatch(typeof(FirstPersonController), "RpcLogic___AboubiPlayObservers_3316948804")]
-public static class RemoveTauntReceiveLimiter
+public static class RemoveTauntLimiter
 {
     public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
