@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using ComputerysModdingUtilities;
@@ -21,6 +22,7 @@ public class TauntBindPlugin : BaseUnityPlugin
     private static ConfigEntry<KeyCode>[] _tauntKeys = new ConfigEntry<KeyCode>[10];
     private static readonly KeyCode[] _defaultKeys = [KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9];
     private static readonly float[] _tauntCooldowns = [0.4f, 0.3f, 0.3f, 0.5f, 0.7f, 0.4f, 0.7f, 0.9f, 1f, 0.3f];
+    private static bool _infTaunt = false;
 
     private void Awake()
     {
@@ -32,10 +34,14 @@ public class TauntBindPlugin : BaseUnityPlugin
         {
             _tauntKeys[i] = Config.Bind("General", "Key for taunt #" + i, _defaultKeys[i]);
         }
+
+        _infTaunt = Config.Bind("General", "Infinite Taunt", false, "Remove cooldown on taunting").Value;
+        if (Chainloader.PluginInfos.ContainsKey("dimolade.dimolade.InfTaunt"))
+            _infTaunt = true;
     }
 
     [HarmonyPatch(typeof(FirstPersonController), "HandleTaunt")]
-    internal static class FirstPersonControllerPatch
+    public static class FirstPersonControllerPatch
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
@@ -58,7 +64,7 @@ public class TauntBindPlugin : BaseUnityPlugin
                 {
                     __instance.AboubiPlayServer(i);
                     Settings.Instance.IncreaseTauntsAmount();
-                    __instance.tauntTimer = _tauntCooldowns[i];
+                    __instance.tauntTimer = _infTaunt ? 0 : _tauntCooldowns[i];
                     break;
                 }
             }
