@@ -1,0 +1,7 @@
+{
+  "name": "Taunt_Binds",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/Kokiix/straftat_taunt_binds",
+  "description": "Rebind your Taunt Keys!",
+  "dependencies": ["BepInEx-BepInExPack-5.4.2305"]
+}
