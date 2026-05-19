@@ -27,7 +27,7 @@ public class TauntBindPlugin : BaseUnityPlugin
     private void Awake()
     {
         Log = Logger;
-        harmony = new Harmony(PluginInfo.PLUGIN_GUID);
+        harmony = new Harmony("TauntBinds");
         harmony.PatchAll();
 
         for (int i = 0; i < 10; i++)
@@ -35,9 +35,14 @@ public class TauntBindPlugin : BaseUnityPlugin
             _tauntKeys[i] = Config.Bind("General", "Key for taunt #" + i, _defaultKeys[i]);
         }
 
+        // Inftaunt
         _infTaunt = Config.Bind("General", "Infinite Taunt", false, "Remove cooldown on taunting").Value;
         if (Chainloader.PluginInfos.ContainsKey("dimolade.dimolade.InfTaunt"))
+        {
             _infTaunt = true;
+            // Other mod has a prefix that just totally rewrites the function so it can't be compatible
+            Harmony.UnpatchID("dimolade.harmony.InfTaunt");
+        }
     }
 
     [HarmonyPatch(typeof(FirstPersonController), "HandleTaunt")]
@@ -58,6 +63,7 @@ public class TauntBindPlugin : BaseUnityPlugin
 
         public static void HandleTaunt(FirstPersonController __instance)
         {
+            Debug.LogError("SLDFKJ");
             for (int i = 0; i < 10; i++)
             {
                 if (Input.GetKeyDown(_tauntKeys[i].Value))
