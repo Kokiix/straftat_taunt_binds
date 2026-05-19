@@ -22,7 +22,6 @@ public class TauntBindPlugin : BaseUnityPlugin
 
     private static ConfigEntry<KeyCode>[] _tauntKeys = new ConfigEntry<KeyCode>[10];
     private static readonly KeyCode[] _defaultKeys = [KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9];
-    private static readonly float[] _tauntCooldowns = [0.4f, 0.3f, 0.3f, 0.5f, 0.7f, 0.4f, 0.7f, 0.9f, 1f, 0.3f];
     private static bool _infTaunt = false;
 
     private void Awake()
@@ -34,7 +33,7 @@ public class TauntBindPlugin : BaseUnityPlugin
         }
 
         // Inftaunt
-        _infTaunt = Config.Bind("General", "Infinite Taunt", false, "Remove cooldown on taunting").Value;
+        _infTaunt = Config.Bind("General", "Infinite Taunt", false, "Remove cooldown on taunting. Having the InfTaunt mod enabled will automatically set this to true.").Value;
         if (Chainloader.PluginInfos.ContainsKey("dimolade.dimolade.InfTaunt"))
         {
             _infTaunt = true;
@@ -59,16 +58,34 @@ public class TauntBindPlugin : BaseUnityPlugin
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // var handleTaunt = AccessTools.Method(typeof(FirstPersonControllerPatch), nameof(HandleTaunt));
+            var tauntTimer = AccessTools.Field(typeof(FirstPersonController), "tauntTimer");
 
             var matcher = new CodeMatcher(instructions);
-            for (int i = 1; i < 10; i++)
+
+            // Remove tauntTimer <= 0 check
+            if (_infTaunt)
+                matcher.MatchForward(useEnd: false,
+                new CodeMatch(OpCodes.Ldarg_0),
+                new CodeMatch(OpCodes.Ldfld, tauntTimer),
+                new CodeMatch(OpCodes.Ldc_R4),
+                new CodeMatch(OpCodes.Ble_Un),
+                new CodeMatch(OpCodes.Ret))
+                .RemoveInstructions(5);
+
+            // Do once for taunt input, then again for cooldown increment
+            for (int i = 0; i < 2; i++)
             {
+                // Set keybinds #1-9
+                for (int j = 1; j < 10; j++)
+                {
+                    matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
+                    matcher.SetOperandAndAdvance((int)_tauntKeys[j].Value);
+                }
+                // Then #0
                 matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
-                matcher.SetOperandAndAdvance((int)_tauntKeys[i].Value);
+                matcher.SetOperandAndAdvance((int)_tauntKeys[0].Value);
             }
-            matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
-            matcher.SetOperandAndAdvance((int)_tauntKeys[0].Value);
+
             return matcher.InstructionEnumeration();
         }
     }
