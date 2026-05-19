@@ -21,8 +21,8 @@ public class TauntBindPlugin : BaseUnityPlugin
 
     private static ConfigEntry<KeyCode>[] _tauntKeys = new ConfigEntry<KeyCode>[10];
     private static readonly KeyCode[] _defaultKeys = [KeyCode.Alpha0, KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9];
-    private static bool _infTaunt = false;
-    private static bool _limitTaunts = false;
+    private static bool _infTaunt;
+    private static bool _limitTaunts;
 
     private void Awake()
     {
@@ -32,8 +32,8 @@ public class TauntBindPlugin : BaseUnityPlugin
         }
 
         // Inftaunt
-        _infTaunt = Config.Bind("Infinite Taunt", "Remove cooldown on taunts", false, "Having the InfTaunt mod enabled will automatically set this to true.").Value;
-        _infTaunt = Config.Bind("Infinite Taunt", "Limit Received Taunts", true, "Vanilla limits received taunts to ~5 per second. Removing this allows you to hear inftaunts of other players.").Value;
+        _infTaunt = Config.Bind("Infinite Taunt", "Remove cooldown on taunts", false, "Having the InfTaunt mod enabled will automatically set this to true. You will only hear some of the sounds you are generated unless you remove the limiter in the below setting.").Value;
+        _limitTaunts = Config.Bind("Infinite Taunt", "Limit Received Taunts", true, "Vanilla limits the max taunts/second you can receive. This removes that limit for your client.").Value;
         if (Chainloader.PluginInfos.ContainsKey("dimolade.dimolade.InfTaunt"))
         {
             _infTaunt = true;
@@ -72,7 +72,7 @@ public class TauntBindPlugin : BaseUnityPlugin
                 new CodeMatch(OpCodes.Ret))
                 .RemoveInstructions(5);
 
-            // Do once for taunt input, then again for cooldown increment
+            // Do once for taunt input, then again for cooldown increment 
             for (int i = 0; i < 2; i++)
             {
                 // Set keybinds #1-9
@@ -84,6 +84,10 @@ public class TauntBindPlugin : BaseUnityPlugin
                 // Then #0
                 matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S));
                 matcher.SetOperandAndAdvance((int)_tauntKeys[0].Value);
+
+                // Skip additional Ldc call
+                // PlayServer func uses Ldc_I4_S bc there isn't opcode for #9
+                matcher.MatchForward(useEnd: false, new CodeMatch(OpCodes.Ldc_I4_S)).Advance(1);
             }
 
             return matcher.InstructionEnumeration();
