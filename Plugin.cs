@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace TauntBinds;
 
-[BepInPlugin("TauntBinds", "Taunt Binds", "1.0.0")]
+[BepInPlugin("TauntBinds", "Taunt Binds", "1.1.0")]
 [BepInDependency("dimolade.dimolade.InfTaunt", BepInDependency.DependencyFlags.SoftDependency)]
 public class TauntBindPlugin : BaseUnityPlugin
 {
@@ -37,12 +37,9 @@ public class TauntBindPlugin : BaseUnityPlugin
         if (Chainloader.PluginInfos.ContainsKey("dimolade.dimolade.InfTaunt"))
         {
             _infTaunt = true;
-            // Other mod has a prefix that just totally rewrites the function so it can't be compatible
+            // Other mod has a prefix that totally rewrites the function so it can't be compatible
             Harmony.UnpatchID("dimolade.harmony.InfTaunt");
         }
-
-        // debug
-        HarmonyFileLog.Enabled = true;
 
         _harmony = new Harmony("TauntBinds");
         _harmony.PatchAll();
@@ -54,7 +51,7 @@ public class TauntBindPlugin : BaseUnityPlugin
     }
 
     [HarmonyPatch(typeof(FirstPersonController), "HandleTaunt")]
-    public static class FirstPersonControllerPatch
+    public static class TauntBindPatch
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
@@ -88,5 +85,17 @@ public class TauntBindPlugin : BaseUnityPlugin
 
             return matcher.InstructionEnumeration();
         }
+    }
+}
+
+[HarmonyPatch(typeof(FirstPersonController), "RpcLogic___AboubiPlayObservers_3316948804")]
+public static class RemoveTauntReceiveLimiter
+{
+    public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    {
+        return new CodeMatcher(instructions)
+        .Start()
+        .RemoveInstructions(10)
+        .InstructionEnumeration();
     }
 }
